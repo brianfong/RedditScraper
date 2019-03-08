@@ -3,4 +3,4 @@ WORKDIR /usr/src/app
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
 COPY . .
-CMD ["shotgun", "app.rb"]
+CMD ["ruby", "scraper.rb"]
