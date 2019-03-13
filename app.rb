@@ -7,6 +7,7 @@ require 'net/https'
 require 'open-uri'
 require 'logger'
 require 'sqlite3'
+require 'uri'
 
 logger = Logger.new(STDOUT)
 logger.level = Logger::INFO
@@ -31,7 +32,6 @@ Faraday.default_connection = Faraday.new(options = {:headers=>{:user_agent => us
 
 conn = Faraday.default_connection
 
-# TODO: Make this 100 objects
 # TODO: Once you have this all in the database, you can then fetch with query params before_id/after_id depending on how you want to loop
 response = conn.get 'https://www.reddit.com/r/memes/.json?limit=1'
 parsed_json = JSON.parse(response.body.to_json)
@@ -46,6 +46,11 @@ title = JSON.parse(parsed_json)["data"]["children"][0]["data"]["title"]
 author = JSON.parse(parsed_json)["data"]["children"][0]["data"]["author"]
 url = JSON.parse(parsed_json)["data"]["children"][0]["data"]["url"]
 permalink = JSON.parse(parsed_json)["data"]["children"][0]["data"]["permalink"]
+
+# # INSTEAD: https://stackoverflow.com/questions/22132623/ruby-iterate-over-parsed-json#
+# parsed_json['data']['children'].each do |child|
+#  puts child['name']['title']['author']['url']['permalink']
+# end
 
 # Think if you want to write better logging
 logger.warn "Found a meme: #{name}"
@@ -65,6 +70,7 @@ db.execute("INSERT INTO posts (name, author, title, url, permalink)
 logger.warn "Downloading #{url}"
 img = conn.get "#{url}"
 File.open("tmp/#{name}.jpg", 'wb') { |fp| fp.write(img.body) }
+#File.open(File.join("tmp/#{name}.jpg"), 'wb') { |fp| fp.write(img.body) }
 
 # TODO: Use ImageMagick to normalize the file formats/color depth and all that jazz
 # https://github.com/minimagick/minimagick
