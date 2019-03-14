@@ -34,57 +34,57 @@ Faraday.default_connection = Faraday.new(options = {:headers=>{:user_agent => us
 conn = Faraday.default_connection
 
 # TODO: Once you have this all in the database, you can then fetch with query params before_id/after_id depending on how you want to loop
-response = conn.get 'https://www.reddit.com/r/memes/.json?limit=1'
+response = conn.get 'https://www.reddit.com/r/memes/.json?limit=100'
 parsed_json = JSON.parse(response.body.to_json)
 
 # When in debug; write out the full thing; otherwise we'll skip it
 logger.debug parsed_json
 
-# Fields we want
-# TODO: Do this better. Once you fetch 100, you will need to essentially do this in a "for loop"
-name = JSON.parse(parsed_json)["data"]["children"][0]["data"]["name"]
-title = JSON.parse(parsed_json)["data"]["children"][0]["data"]["title"]
-author = JSON.parse(parsed_json)["data"]["children"][0]["data"]["author"]
-url = JSON.parse(parsed_json)["data"]["children"][0]["data"]["url"]
-permalink = JSON.parse(parsed_json)["data"]["children"][0]["data"]["permalink"]
-
 # # INSTEAD: 
 # # https://stackoverflow.com/questions/22132623/ruby-iterate-over-parsed-json
 # # https://stackoverflow.com/questions/44481167/parsing-api-with-httparty-nomethoderror-undefined-method-each-for-nilnilclas
-# parsed_json['data']['children'].each do |child|
-#  puts child['name']['title']['author']['url']['permalink']
-# end
+#JSON.parse(parsed_json['data']['children']).each do |child|
+JSON.parse(parsed_json)['data']['children'].each do |child|
+  name      = child['data']['name']
+  title     = child['data']['title']
+  author    = child['data']['author']
+  url       = child['data']['url']
+  permalink = child['data']['permalink']
 
-# Think if you want to write better logging
-logger.warn "Found a meme: #{name}"
-logger.info title
-logger.info author
-logger.info url
-logger.info permalink
+  # binding.pry
 
-# TODO: Move to rails legit; refer to the blog homework
-#       Write some migrations, use ActiveRecord.
-# TODO: Does this post already exist? Skip if it does
-# TODO: Add an "ID" column, set as uuid or integer. If you use uuid, you will also need a column of created_at.
+  # Think if you want to write better logging
+  logger.warn "Found a meme: #{name}"
+  logger.info title
+  logger.info author
+  logger.info url
+  logger.info permalink
 
-#Does dupe check work?
-def existsCheck(permalink)
-  temp = db.execute( "select 1 where exists(
-      select 1
-      from permalink
-      where promoID = ?
-  ) ", [permalink] ).any?
+  # TODO: Move to rails legit; refer to the blog homework
+  #       Write some migrations, use ActiveRecord.
+  # TODO: Does this post already exist? Skip if it does
+  # TODO: Add an "ID" column, set as uuid or integer. If you use uuid, you will also need a column of created_at.
+
+  #Does dupe check work?
+  def existsCheck(permalink)
+    temp = db.execute( "select 1 where exists(
+        select 1
+        from permalink
+        where promoID = ?
+    ) ", [permalink] ).any?
+  end
+
+  db.execute("INSERT INTO posts (name, author, title, url, permalink) 
+              VALUES (?, ?, ?, ?, ?)", [name, title, author, url, permalink])
+
+  # TODO: Fetch the image, store in ./tmp/
+  logger.warn "Downloading #{url}"
+      
+  img = conn.get "#{url}"
+  FileUtils.mkdir_p 'tmp'
+  File.open("tmp/#{name}.jpg", 'wb') { |fp| fp.write(img.body) }
+
+  # TODO: Use ImageMagick to normalize the file formats/color depth and all that jazz
+  # https://github.com/minimagick/minimagick
+
 end
-
-db.execute("INSERT INTO posts (name, author, title, url, permalink) 
-            VALUES (?, ?, ?, ?, ?)", [name, title, author, url, permalink])
-
-# TODO: Fetch the image, store in ./tmp/
-logger.warn "Downloading #{url}"
-    
-img = conn.get "#{url}"
-FileUtils.mkdir_p 'tmp'
-File.open("tmp/#{name}.jpg", 'wb') { |fp| fp.write(img.body) }
-
-# TODO: Use ImageMagick to normalize the file formats/color depth and all that jazz
-# https://github.com/minimagick/minimagick
