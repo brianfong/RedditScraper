@@ -48,7 +48,9 @@ author = JSON.parse(parsed_json)["data"]["children"][0]["data"]["author"]
 url = JSON.parse(parsed_json)["data"]["children"][0]["data"]["url"]
 permalink = JSON.parse(parsed_json)["data"]["children"][0]["data"]["permalink"]
 
-# # INSTEAD: https://stackoverflow.com/questions/22132623/ruby-iterate-over-parsed-json#
+# # INSTEAD: 
+# # https://stackoverflow.com/questions/22132623/ruby-iterate-over-parsed-json
+# # https://stackoverflow.com/questions/44481167/parsing-api-with-httparty-nomethoderror-undefined-method-each-for-nilnilclas
 # parsed_json['data']['children'].each do |child|
 #  puts child['name']['title']['author']['url']['permalink']
 # end
@@ -64,6 +66,16 @@ logger.info permalink
 #       Write some migrations, use ActiveRecord.
 # TODO: Does this post already exist? Skip if it does
 # TODO: Add an "ID" column, set as uuid or integer. If you use uuid, you will also need a column of created_at.
+
+#Does dupe check work?
+def existsCheck(permalink)
+  temp = db.execute( "select 1 where exists(
+      select 1
+      from permalink
+      where promoID = ?
+  ) ", [permalink] ).any?
+end
+
 db.execute("INSERT INTO posts (name, author, title, url, permalink) 
             VALUES (?, ?, ?, ?, ?)", [name, title, author, url, permalink])
 
