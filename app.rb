@@ -8,6 +8,7 @@ require 'open-uri'
 require 'logger'
 require 'sqlite3'
 require 'uri'
+require 'fileutils'
 
 logger = Logger.new(STDOUT)
 logger.level = Logger::INFO
@@ -68,9 +69,10 @@ db.execute("INSERT INTO posts (name, author, title, url, permalink)
 
 # TODO: Fetch the image, store in ./tmp/
 logger.warn "Downloading #{url}"
+    
 img = conn.get "#{url}"
+FileUtils.mkdir_p 'tmp'
 File.open("tmp/#{name}.jpg", 'wb') { |fp| fp.write(img.body) }
-#File.open(File.join("tmp/#{name}.jpg"), 'wb') { |fp| fp.write(img.body) }
 
 # TODO: Use ImageMagick to normalize the file formats/color depth and all that jazz
 # https://github.com/minimagick/minimagick
