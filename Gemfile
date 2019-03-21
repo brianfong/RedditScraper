@@ -6,3 +6,4 @@ gem 'faraday'
 gem 'json'
 gem 'pry'
 gem 'sqlite3'
+gem "mini_magick"
