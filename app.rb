@@ -70,12 +70,16 @@ JSON.parse(parsed_json)['data']['children'].each do |child|
 
   end
 
+  FileUtils.mkdir_p 'tmp'
+
   begin
     db.execute("INSERT INTO posts (name, author, title, url, permalink) VALUES (?, ?, ?, ?, ?)", [name, title, author, url, permalink])
     logger.info "Inserted: #{name}"
     logger.warn "Downloading #{url}"
 
     image = MiniMagick::Image.open("#{url}")
+    # binding.pry
+    logger.info "Exif: #{image.exif}"
     image.resize "500x500"
     image.format "png"
     image.write "./tmp/#{name}.png"
