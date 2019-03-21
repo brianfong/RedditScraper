@@ -15,7 +15,7 @@ logger = Logger.new(STDOUT)
 logger.level = Logger::INFO
 
 def user_agent
-  "Reddit::Scraper v0.0.3 (https://github.com/brianfong/RedditScraper)"
+  "Reddit::Scraper v0.0.4 (https://github.com/brianfong/RedditScraper)"
 end
 
 db = SQLite3::Database.new "test.db"
@@ -26,8 +26,12 @@ create table if not exists posts (
   author text,
   title text,
   url text,
-   permalink
+  permalink text
  );
+SQL
+
+rows = db.execute <<-SQL
+create unique index if not exists name_posts on posts(name);
 SQL
 
 Faraday.default_connection = Faraday.new(options = {:headers=>{:user_agent => user_agent }})
@@ -50,12 +54,6 @@ JSON.parse(parsed_json)['data']['children'].each do |child|
 
   #binding.pry
 
-  logger.warn "Found a meme: #{name}"
-  logger.info title
-  logger.info author
-  logger.info url
-  logger.info permalink
-
   # TODO: Move to rails legit; refer to the blog homework
   #       Write some migrations, use ActiveRecord.
   # TODO: Does this post already exist? Skip if it does
@@ -72,24 +70,18 @@ JSON.parse(parsed_json)['data']['children'].each do |child|
 
   end
 
- exit 1
+  begin
+    db.execute("INSERT INTO posts (name, author, title, url, permalink) VALUES (?, ?, ?, ?, ?)", [name, title, author, url, permalink])
+    logger.info "Inserted: #{name}"
+    logger.warn "Downloading #{url}"
 
-    db.execute("INSERT INTO posts (name, author, title, url, permalink) 
-    VALUES (?, ?, ?, ?, ?)", [name, title, author, url, permalink])
+    image = MiniMagick::Image.open("#{url}")
+    image.resize "500x500"
+    image.format "png"
+    image.write "./tmp/#{name}.png"
 
-  logger.warn "Downloading #{url}"
-      
-  img = conn.get "#{url}"
-  FileUtils.mkdir_p 'tmp'
-  File.open("tmp/#{name}.jpg", 'wb') { |fp| fp.write(img.body) }
-
-  # TODO: Use ImageMagick to normalize the file formats/color depth and all that jazz
-  # https://github.com/minimagick/minimagick
-  # THIS BLOCK THROWS ERROR ON LINE 67 WHY?
-  # image = MiniMagick::Image.open("{name}.jpg")
-  # image.path "./tmp"
-  # image.resize "100x100"
-  # image.format "jpg"
-  # image.write "{name}.png"
+  rescue
+    logger.info "Skipping insert: #{name}"
+  end
 
 end
