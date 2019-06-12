@@ -5,5 +5,5 @@ gem 'shotgun'
 gem 'faraday'
 gem 'json'
 gem 'pry'
-gem 'sqlite3'
+gem 'pg'
 gem "mini_magick"

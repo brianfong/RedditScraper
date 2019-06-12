@@ -3,4 +3,4 @@ WORKDIR /usr/src/app
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
 COPY . .
-CMD ["ruby", "scraper.rb"]
+CMD ["ruby", "app.rb"]
